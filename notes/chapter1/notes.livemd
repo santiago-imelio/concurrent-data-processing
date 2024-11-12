@@ -1,0 +1,101 @@
+<!-- livebook:{"file_entries":[{"name":"concurrency_and_parallelism.png","type":"attachment"}]} -->
+
+# I - Easy Concurrency with the Task Module
+
+## Concurrency and Parallelism
+
+![](files/concurrency_and_parallelism.png)
+
+## Introducing the Task Module
+
+In Elixir, concurrency is achived by starting a new process and executing the code within that process. We may also need to then retrieve the result. For that, we can use `spawn/1` and `receive`. However, using them could be tricky in practice, and we could end up repeating code everywhere.
+
+Thanks to the `Task` module, there is hardly any need to use `spawn/1` and `receive`, since it abstracts and simplifies in a concise API everything to run code concurrently.
+
+### Usual pattern when using Task module
+
+Generally, the task module is a good fit for processing concurrently lists of items.
+
+-> `Task.async/1` spawns a process that runs a passed function. Returns a Task.
+
+-> `Task.await/2` returns the result of a given tasks when it finishes execution.
+
+-> `Task.yield/1` returns the result of a given tasks only if it has finished execution. Otherwise, returns `nil`. Calling this function will block the caller process for a given timeout, which by default is 5 seconds.
+
+-> `Task.shutdown/2` terminates a given Task that has not finished execution.
+
+When using `Task.async/1`, always process the result by using `Task.await/2`, or `Task.yield/1` followed by `Task.shutdown/2`.
+
+```elixir
+# each item will be processed synchronously
+
+[1, 2, 3, 4, 5]
+|> Enum.map(fn x ->
+  Process.sleep(x * 1000)
+  x + 10
+end)
+```
+
+```elixir
+# will take as much time as the longest running task
+
+[1, 2, 3, 4, 5]
+|> Enum.map(fn x -> 
+  Task.async(fn -> 
+    Process.sleep(x * 1000)
+    x + 10 
+  end)
+end)
+|> Enum.map(&Task.await/1)
+```
+
+## Synchronous and Asynchronous Code
+
+### Synchronous code
+
+The runtime executes the code and waits for that execution to finish before carrying on with the rest of the program. Often called _blocking code_, since the program will not continue with the execution until the synchronous code finishes.
+
+### Asynchronous code
+
+The runtime executes the code in the background, letting it to execute the rest of the program concurrently. Since it does not block the main execution of the program, it is also called _non-blocking code_.
+
+## Managing a Series of Tasks
+
+When we need to run several concurrent tasks at the same time, we could end up putting sudden pressure on the system resources, which could negatively impact reliability. The solution to this problem is using `async_stream/3`, since this function allows setting a cap on the number of tasks being executed concurrently.
+
+### Options
+
+* `max_concurrency` - the maximum amount of concurrent tasks to process the list. By default, is set to the number of logical cores in the system.
+* `ordered` - if equal to false, it will not necessarily return the results in the original order. By default it is set to true, so if preservating the order is not useful, setting this to false may speed things up.
+
+```elixir
+[5, 4, 3, 2, 1]
+|> Task.async_stream(
+  fn x -> 
+    Process.sleep(x * 1000)
+    x + 10
+  end, 
+  [ordered: false, timeout: 6000])
+|> Enum.to_list()
+```
+
+## Linking Processes
+
+Processes in Elixir can be linked together, and Task processes are usually linked to the caller process. Process links have a fundamental role when building concurrent and fault-tolerant programs.
+
+Linked processes have a special relationship: **as soon as one exits, the other is notified**. This means that if there is a chain of linked processes, eventually all of them will get notified if a crash happens.
+
+### Configuring a Process to Trap Exits
+
+Trapping an exit within a process means aknowledging the exit message of a linked process, but continuing to run instead of terminating. This also means that the exit will not propagate to other linked processes. This allows to **isolate process crashes**.
+
+<!-- livebook:{"break_markdown":true} -->
+
+In this example, we flag the caller process to trap exits from linked processes. Then we spawn a linked process that raises an error. If didn't flag the process first, Livebook —the caller process— would crash.
+
+```elixir
+Process.flag(:trap_exit, true)
+spawn_link(fn -> raise "Oops!" end)
+```
+
+Generally we won't need to do this, since Elixir provides a special type of process to handle this kind of scenarios. Those processes are called _supervisors_.
