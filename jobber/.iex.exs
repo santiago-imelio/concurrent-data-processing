@@ -1,5 +1,5 @@
 good_job = fn ->
-  Process.sleep(5000)
+  Process.sleep(50_000)
   {:ok, []}
 end
 
