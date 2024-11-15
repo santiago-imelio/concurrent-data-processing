@@ -99,3 +99,11 @@ spawn_link(fn -> raise "Oops!" end)
 ```
 
 Generally we won't need to do this, since Elixir provides a special type of process to handle this kind of scenarios. Those processes are called _supervisors_.
+
+## Supervisor Processes
+
+Supervisor, just like GenServer, is a behviour for implementing a special type of Elixir processes. Supervisors are processes that manage—or supervise—other processes, to guarantee the reliability of the system. The supervised processes are called _child processes_.
+
+### Properties of Supervisors
+
+* **Fault-tolerant** -> supervisors have different strategies to handle child process crashes, such as restarting them.

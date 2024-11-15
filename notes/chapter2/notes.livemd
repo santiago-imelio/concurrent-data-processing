@@ -1,0 +1,41 @@
+# II - Long Running Processes Using GenServer
+
+## GenServer Processes
+
+A GenServer is a process like any other Elixir process, and it can be used to keep state, execute asynchronous code, and so on. The advantage of using generic server processes is that it comes with a standard set of interface functions that include functionallity for tracing and error reporting. It will also fit a supervision tree.
+
+The GenServer behaviour abstracts the common client-server interaction. Developers are only required to implement the callbacks and functionality they are interested in.
+
+<!-- livebook:{"break_markdown":true} -->
+
+<!-- Learn more at https://mermaid-js.github.io/mermaid -->
+
+```mermaid
+  graph BT
+      C(Client #3) ~~~ B(Client #2) ~~~ A(Client #1)
+      A & B & C -->|request| GenServer
+      GenServer -.->|reply| A & B & C
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+GenServer processes provide a much more robust way of executing asynchronous operations than simpler types of processes, such as the ones created by Task module.
+
+### Properties of GenServer processes
+
+* **Interaction** -> just like web servers, GenServer processes listen for requests and reply to the client process via message passing.
+* **Long-running** and **stateful** -> they can hold a state that can be changed during the lifetime of the process.
+* **Support for exception handling** -> GenServer behaviour provides callbacks that are specialized to handle a wide range of events, including exceptions.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Some useful callbacks
+
+* handle_call/3
+* handle_cast/2
+* handle_continue/2
+* handle_info/2
+* init/1
+* terminate/2
+
+Each of these functions accept certain parameters and also support certain return types.

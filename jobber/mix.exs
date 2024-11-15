@@ -1,9 +1,9 @@
-defmodule Sender.MixProject do
+defmodule Jobber.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :sender,
+      app: :jobber,
       version: "0.1.0",
       elixir: "~> 1.16",
       start_permanent: Mix.env() == :prod,
@@ -14,8 +14,8 @@ defmodule Sender.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger, :crypto],
-      mod: {Sender.Application, []}
+      extra_applications: [:logger, :wx, :observer, :runtime_tools],
+      mod: {Jobber.Application, []}
     ]
   end
 
