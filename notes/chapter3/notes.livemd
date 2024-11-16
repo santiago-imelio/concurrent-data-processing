@@ -1,0 +1,50 @@
+# III - Data Processing Pipelines with GenStage
+
+## Introduction
+
+In previous chapters, we saw different ways of executing data asynchronously. In all cases, we were deciding the amount of work that had to be done and Elixir would process the work eagerly to give us the result.
+
+However, those approaches may not be suitable for the complexity and workload of real world systems:
+
+* **Limited resources** -> memory and CPU power are finite, meaning that our server may become overwhelmed by the amount of work that it needs to do.
+* **Rate-limited APIs** -> often we rely on third-party APIs which enforce rate-limiting and fixed quotas for the number of requests. If we max out on this numbers, requests will be blocked and our server will stop working as expected.
+
+<!-- livebook:{"break_markdown":true} -->
+
+_In a nutshell, as the amount of work we need to do grows, there is an increasing chance that we hit a certain limit on a resource available to us. You can spend more money on computer hardware or buy more powerful virtual machines, but that’s usually a temporary solution that often leads to diminishing returns. For that reason, making the best use of existing resources should be a priority when designing and scaling software applications_.
+
+## Understanding Back-Pressure
+
+When a data processing system encounters _back-pressure_, it means that the downstream component or stage is unable to keep up with the incoming data, leading to a potential overflow or system instability. This situation can occur due to various reasons, such as resource limitations, network congestion, or processing bottlenecks.
+
+Back-pressure, in data engineering, refers to a **flow control mechanism** used to handle the mismatch in data processing rates between different stages or components of a data processing system. It is particularly relevant in scenarios where the rate at which data is produced exceeds the rate at which it can be processed or consumed downstream.
+
+## GenStage
+
+_GenStage_ is an Elixir behaviour—built on top of GenServer—specialized for exchanging events with back-pressure between processes. As the name suggests, GenStage is for creating _stages_, a special type of process that is the building block for data-processing pipelines.
+
+<!-- livebook:{"break_markdown":true} -->
+
+```mermaid
+flowchart LR;
+  s1[Stage]-->s2[Stage]-->s3[Stage];
+
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+Although events move through stages from left to right in this diagram, it is actually the last stage in the pipeline that controls the flow. This is because the _demand_ for more events travels in the opposite direction.
+
+There are three types of stages:
+
+### Producers
+
+It's the first stage of a data pipeline. It's the source of the data that flows into the pipeline and responsible for producing all the _events_ that for all other stages that follow.
+
+### Consumers
+
+Events created by the producer are received by the _consumer_ stage. A consumer has to subscribe to a producer to let them know they’re available, and request events. Consumer stages are always found at the end of pipelines.
+
+### Producer-consumers
+
+Sometimes we need to have more than two stages in our pipeline. This is where the producer-consumer stage comes in: it has the special ability to produce and consume events at the same time.
