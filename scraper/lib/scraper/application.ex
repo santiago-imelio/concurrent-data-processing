@@ -9,7 +9,7 @@ defmodule Scraper.Application do
   def start(_type, _args) do
     children = [
       PageProducer,
-      PageConsumer
+      PageConsumerSupervisor
     ]
 
     opts = [strategy: :one_for_one, name: Scraper.Supervisor]
